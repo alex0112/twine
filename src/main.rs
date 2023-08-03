@@ -36,7 +36,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let config = Config::new(&args).unwrap_or_else(|err| {
-        println!("There was a problem processing the arguments to twine: {} ", err);
+        eprintln!("There was a problem processing the arguments to twine: {} ", err);
+
+        // writeln!(io::stderr(), "Arguments Error: {}", err).expect(format!("Failed for an unknown reason, unable to write message to stderr. Attempting to print here: {}", err));
 
         std::process::exit(1);
     });
