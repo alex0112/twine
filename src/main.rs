@@ -32,10 +32,6 @@ impl Config {
 
 }
 
-/////////////////////////////////////////////////////////////////////
-// https://y.yarn.co/84e0913e-9df9-4e44-90dd-e25a079bae86_text.gif //
-/////////////////////////////////////////////////////////////////////
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
@@ -45,9 +41,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     });
 
-    let uid = capture_uid(&config.url).unwrap();
-    let gif_url = raw_gif_url(uid).unwrap().to_string();
-    let raw = get(gif_url).unwrap().bytes().unwrap();
+    let uid = capture_uid(&config.url)?;
+    let gif_url = raw_gif_url(uid)?.to_string();
+    let raw = get(gif_url)?.bytes()?;
 
     io::stdout().write_all(&raw)?;
 
@@ -55,15 +51,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn capture_uid(url: &Url) -> Result<String, String> {
-    let uid_regex_cap = Regex::new(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})").unwrap();
-    let uid = uid_regex_cap.captures(url.as_str()).unwrap().get(1).map_or("", |m| m.as_str());
+    let uid_regex_cap = Regex::new(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
+        .map_err(|err| format!("There was an error in the creation of the yarn regex capture: {}", err))?;
+
+    let uid = uid_regex_cap
+        .captures(url.as_str())
+        .and_then(|capture| capture.get(1) )
+        .map_or("", |m| m.as_str());
 
     Ok(uid.to_string())
 }
 
 fn raw_gif_url(uid: String) -> Result<Url, ParseError> {
     let raw_gif_path = "https://y.yarn.co/".to_owned() + &uid + "_text.gif";
-    let raw_gif_url = Url::parse(&raw_gif_path).unwrap();
+    let raw_gif_url = Url::parse(&raw_gif_path)?;
 
     Ok(raw_gif_url)
 }
