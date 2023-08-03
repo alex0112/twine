@@ -4,31 +4,54 @@ use regex::Regex;
 use std::io::{self, Write};
 use std::env;
 
+struct Config {
+    pub url: Url
+}
+
+impl Config {
+    fn new(args: &[String]) -> Result<Config, &'static str> {
+        let url_arg = args.get(1).ok_or("Please Provide a URL")?;
+        if url_arg.is_empty() {
+            return Err("No URL provided");
+        }
+
+        let yarn_url = Url::parse(url_arg.as_ref()).map_err(|_| "Please provide a valid URL")?;
+
+        if !Self::matches_yarn_url(&yarn_url) {
+            return Err("It appears that you have entered a URL from a site other than getyarn.io");
+        }
+
+        Ok(Config { url: yarn_url })
+    }
+    
+    fn matches_yarn_url(url: &Url) -> bool {
+        let yarn_url_regex = Regex::new(r"getyarn\.io/yarn-clip").unwrap();
+
+        yarn_url_regex.is_match(url.as_str())
+    }
+
+}
+
 /////////////////////////////////////////////////////////////////////
 // https://y.yarn.co/84e0913e-9df9-4e44-90dd-e25a079bae86_text.gif //
 /////////////////////////////////////////////////////////////////////
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //    let given_url = Url::parse("https://getyarn.io/yarn-clip/84e0913e-9df9-4e44-90dd-e25a079bae86").unwrap();
-
-
     let args: Vec<String> = env::args().collect();
-    let given_url = Url::parse(&args[1]).expect("Either the URL provided was invalid or not provided");
 
-    assert!(is_yarn_url(&given_url));
-    let uid = capture_uid(&given_url).unwrap();
+    let config = Config::new(&args).unwrap_or_else(|err| {
+        println!("There was a problem processing the arguments to twine: {} ", err);
+
+        std::process::exit(1);
+    });
+
+    let uid = capture_uid(&config.url).unwrap();
     let gif_url = raw_gif_url(uid).unwrap().to_string();
     let raw = get(gif_url).unwrap().bytes().unwrap();
 
     io::stdout().write_all(&raw)?;
 
     Ok(())
-}
-
-fn is_yarn_url(url: &Url) -> bool {
-    let yarn_url_regex = Regex::new(r"getyarn\.io/yarn-clip").unwrap();
-
-    return yarn_url_regex.is_match(url.as_str());
 }
 
 fn capture_uid(url: &Url) -> Result<String, String> {
