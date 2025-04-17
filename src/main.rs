@@ -2,6 +2,7 @@ use clap::Parser;
 use regex::Regex;
 use url::{Url};
 use std::sync::LazyLock;
+use anyhow::{Context, Result, ensure};
 
 // use this to validate getyarn urls (LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait)
 static YARN_REGEX: LazyLock<Regex> = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("Regex pattern was not valid.") });
@@ -19,13 +20,11 @@ struct Twine {
 }
 
 impl Twine {
-    fn new(args: Args) -> Result<Twine, &'static str> {
+    fn new(args: Args) -> Result<Twine> {
 
-        let yarn_url = Url::parse(&args.url).map_err(|_| "Please provide a valid URL")?;
+        let yarn_url = Url::parse(&args.url).context("Unable to parse the provided URL")?;
 
-        if !Self::valid_yarn_url(&yarn_url) {
-            return Err("It appears that you have entered a URL from a site other than getyarn.io");
-        }
+        ensure!(Self::valid_yarn_url(&yarn_url), "It appears that you have entered a URL from a site other than getyarn.io");
 
         Ok(Twine { url: yarn_url, args: args })
     }
