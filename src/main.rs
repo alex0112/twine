@@ -1,72 +1,56 @@
-use reqwest::blocking::{get};
-use url::{Url, ParseError};
-use regex::Regex;
-use std::io::{self, Write};
-use std::env;
+use clap::Parser;
+use url::{Url};
 
-struct Config {
-    pub url: Url
+#[derive(Parser)]
+struct Args {
+    /// A valid yarn URL pointing to the clip your heart desires
+    #[arg(required = true)]
+    url: String
 }
 
-impl Config {
-    fn new(args: &[String]) -> Result<Config, &'static str> {
-        let url_arg = args.get(1).ok_or("Please Provide a URL")?;
-        if url_arg.is_empty() {
-            return Err("No URL provided");
-        }
+// A haiku about GIFs:
+// eight bits per pixel
+// bitmap image format, and
+// pronunciation
 
-        let yarn_url = Url::parse(url_arg.as_ref()).map_err(|_| "Please provide a valid URL")?;
+struct Twine {
+    url: Url,
+}
 
-        if !Self::matches_yarn_url(&yarn_url) {
-            return Err("It appears that you have entered a URL from a site other than getyarn.io");
-        }
+impl Twine {
+    fn new(args: Args) -> Result<Twine, &'static str> {
 
-        Ok(Config { url: yarn_url })
+        let yarn_url = Url::parse(&args.url).map_err(|_| "Please provide a valid URL")?;
+
+        // if !Self::matches_yarn_url(&yarn_url) {
+        //     return Err("It appears that you have entered a URL from a site other than getyarn.io");
+        // }
+
+        Ok(Twine { url: yarn_url })
     }
-    
-    fn matches_yarn_url(url: &Url) -> bool {
-        let yarn_url_regex = Regex::new(r"getyarn\.io/yarn-clip").unwrap();
-
-        yarn_url_regex.is_match(url.as_str())
-    }
-
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-
-    let config = Config::new(&args).unwrap_or_else(|err| {
-        eprintln!("There was a problem processing the arguments to twine: {} ", err);
-
-        // writeln!(io::stderr(), "Arguments Error: {}", err).expect(format!("Failed for an unknown reason, unable to write message to stderr. Attempting to print here: {}", err));
-
-        std::process::exit(1);
-    });
-
-    let uid = capture_uid(&config.url)?;
-    let gif_url = raw_gif_url(uid)?.to_string();
-    let raw = get(gif_url)?.bytes()?;
-
-    io::stdout().write_all(&raw)?;
 
     Ok(())
 }
 
-fn capture_uid(url: &Url) -> Result<String, String> {
-    let uid_regex_cap = Regex::new(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
-        .map_err(|err| format!("There was an error in the creation of the yarn regex capture: {}", err))?;
+// TODO:
+// - arboard crate (for putting the gif in clipboard) https://crates.io/crates/arboard
+// - gif crate (for trimming off the end of the gif) https://crates.io/crates/gif
+// - atty (for detecting whether we're writing to stdout or using `>`) https://docs.rs/atty/latest/atty/
 
-    let uid = uid_regex_cap
-        .captures(url.as_str())
-        .and_then(|capture| capture.get(1) )
-        .map_or("", |m| m.as_str());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    Ok(uid.to_string())
-}
+    #[test]
+    fn test_new() { // sanity case
+        let test_url: String = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let test_args: Args = Args {
+            url: test_url
+        };
 
-fn raw_gif_url(uid: String) -> Result<Url, ParseError> {
-    let raw_gif_path = "https://y.yarn.co/".to_owned() + &uid + "_text.gif";
-    let raw_gif_url = Url::parse(&raw_gif_path)?;
-
-    Ok(raw_gif_url)
+        assert!(Twine::new(test_args).is_ok(), "A basic call to Twine::new should return an Ok()");
+    }
 }
