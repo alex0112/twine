@@ -1,5 +1,10 @@
 use clap::Parser;
+use regex::Regex;
 use url::{Url};
+use std::sync::LazyLock;
+
+// use this to validate getyarn urls (LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait)
+static YARN_REGEX: LazyLock<Regex> = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("Regex pattern was not valid.") });
 
 #[derive(Parser)]
 struct Args {
@@ -8,12 +13,8 @@ struct Args {
     url: String
 }
 
-// A haiku about GIFs:
-// eight bits per pixel
-// bitmap image format, and
-// pronunciation
-
 struct Twine {
+    args: Args,
     url: Url,
 }
 
@@ -22,16 +23,19 @@ impl Twine {
 
         let yarn_url = Url::parse(&args.url).map_err(|_| "Please provide a valid URL")?;
 
-        // if !Self::matches_yarn_url(&yarn_url) {
-        //     return Err("It appears that you have entered a URL from a site other than getyarn.io");
-        // }
+        if !Self::valid_yarn_url(&yarn_url) {
+            return Err("It appears that you have entered a URL from a site other than getyarn.io");
+        }
 
-        Ok(Twine { url: yarn_url })
+        Ok(Twine { url: yarn_url, args: args })
+    }
+
+    fn valid_yarn_url(url: &Url) -> bool {
+        YARN_REGEX.is_match(url.as_str())
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     Ok(())
 }
 
@@ -53,4 +57,35 @@ mod tests {
 
         assert!(Twine::new(test_args).is_ok(), "A basic call to Twine::new should return an Ok()");
     }
+
+    #[test]
+    fn test_yarn_url_validation() {
+        let invalid = Url::parse("https://example.com").unwrap();
+        assert_eq!(Twine::valid_yarn_url(&invalid), false, "example.com should not be considered a valid yarn url");
+
+        let valid = Url::parse("https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138").unwrap();
+        assert!(Twine::valid_yarn_url(&valid), "The example clip should be considered a valid URL");
+
+        // TODO: this regex could be pushed a bit more in terms of edge cases
+    }
+    
+    #[test]
+    fn test_new_with_yarn_url() {
+        let invalid = "https://example.com".to_string();
+        let invalid_args: Args = Args {
+            url: invalid
+        };
+        assert!(Twine::new(invalid_args).is_err(),"Creating args with an invalid yarn URL should fail");
+
+        let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let valid_args = Args {
+            url: valid
+        };
+        assert!(Twine::new(valid_args).is_ok())
+    }
 }
+
+// haiku:
+// eight bits per pixel
+// bitmap image format, and
+// pronunciation
