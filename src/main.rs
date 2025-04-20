@@ -109,6 +109,25 @@ mod tests {
         assert!(Twine::valid_yarn_url(&valid), "The example clip should be considered a valid URL");
     }
 
+    /////////////////////////////
+    // Twine::test_capture_uid //
+    /////////////////////////////
+
+    #[test]
+    fn test_capture_uid_invalid_url() {
+        let invalid = Url::parse("https://example.com").unwrap();
+        assert!(Twine::capture_uid(&invalid).is_err(), "example.com should not produce a uid");
+    }
+
+    #[test]
+    fn test_capture_uid_valid_url() {
+        let valid = Url::parse("https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138").unwrap();
+        let expected_uid = "bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let uid = Twine::capture_uid(&valid);
+        
+        assert!(uid.is_ok(), "a valid yarn url should produce a uid");
+        assert_eq!(uid.unwrap(), expected_uid, "a valid yarn url should produce a uid");
+    }
 }
 
 // haiku:
