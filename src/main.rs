@@ -59,8 +59,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod tests {
     use super::*;
 
+    ////////////////
+    // Twine::new //
+    ////////////////
+
     #[test]
-    fn test_new() { // sanity case
+    fn test_new_sanity() { // sanity case
         let test_url: String = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
         let test_args: Args = Args {
             url: test_url
@@ -70,28 +74,22 @@ mod tests {
     }
 
     #[test]
-    fn test_yarn_url_validation() {
-        let invalid = Url::parse("https://example.com").unwrap();
-        assert_eq!(Twine::valid_yarn_url(&invalid), false, "example.com should not be considered a valid yarn url");
-
-        let valid = Url::parse("https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138").unwrap();
-        assert!(Twine::valid_yarn_url(&valid), "The example clip should be considered a valid URL");
-
-        // TODO: this regex could be pushed a bit more in terms of edge cases
-    }
-    
-    #[test]
-    fn test_new_with_yarn_url() {
+    fn test_new_with_invalid_url_in_args() {
         let invalid = "https://example.com".to_string();
         let invalid_args: Args = Args {
             url: invalid
         };
-        assert!(Twine::new(invalid_args).is_err(),"Creating args with an invalid yarn URL should fail");
 
+        assert!(Twine::new(invalid_args).is_err(),"Creating args with an invalid yarn URL should fail");
+    }
+
+    #[test]
+    fn test_new_with_valid_url_in_args() {
         let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
         let valid_args = Args {
             url: valid
         };
+
         assert!(Twine::new(valid_args).is_ok())
     }
 }
