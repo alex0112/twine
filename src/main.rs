@@ -33,6 +33,17 @@ impl Twine {
     fn valid_yarn_url(url: &Url) -> bool {
         YARN_REGEX.is_match(url.as_str())
     }
+
+    fn capture_uid(url: &Url) -> Result<String> {
+
+        let uid: String = UID_CAPTURE_REGEX
+            .captures(url.as_str()).context("Unable to capture a getyarn uid from the provided URL")?
+            .get(1).context("Unable to capture (group 1) from getyarn string")?
+            .as_str()
+            .to_string();
+
+        Ok(uid)
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
