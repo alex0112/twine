@@ -92,6 +92,23 @@ mod tests {
 
         assert!(Twine::new(valid_args).is_ok())
     }
+
+    ///////////////////////////
+    // Twine::valid_yarn_url //
+    ///////////////////////////
+
+    #[test] // TODO: this regex could be pushed a bit more in terms of edge cases
+    fn test_valid_yarn_url_invalid_url_fails() { 
+        let invalid = Url::parse("https://example.com").unwrap();
+        assert_eq!(Twine::valid_yarn_url(&invalid), false, "example.com should not be considered a valid yarn url");
+    }
+    
+    #[test]
+    fn test_valid_yarn_url_valid_url_succeeds() {
+        let valid = Url::parse("https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138").unwrap();
+        assert!(Twine::valid_yarn_url(&valid), "The example clip should be considered a valid URL");
+    }
+
 }
 
 // haiku:
