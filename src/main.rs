@@ -27,7 +27,7 @@ impl Twine {
 
         ensure!(Self::valid_yarn_url(&yarn_url), "It appears that you have entered a URL from a site other than getyarn.io");
 
-        Ok(Twine { url: yarn_url, args: args })
+        Ok(Twine { url: yarn_url, args })
     }
 
     fn valid_yarn_url(url: &Url) -> bool {
@@ -100,7 +100,7 @@ mod tests {
     #[test] // TODO: this regex could be pushed a bit more in terms of edge cases
     fn test_valid_yarn_url_invalid_url_fails() { 
         let invalid = Url::parse("https://example.com").unwrap();
-        assert_eq!(Twine::valid_yarn_url(&invalid), false, "example.com should not be considered a valid yarn url");
+        assert!(!Twine::valid_yarn_url(&invalid), "example.com should not be considered a valid yarn url");
     }
     
     #[test]
