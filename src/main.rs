@@ -4,8 +4,9 @@ use url::{Url};
 use std::sync::LazyLock;
 use anyhow::{Context, Result, ensure};
 
-// use this to validate getyarn urls (LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait)
-static YARN_REGEX: LazyLock<Regex> = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("Regex pattern was not valid.") });
+// LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait
+static YARN_REGEX: LazyLock<Regex>        = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("getyarn.io validation regex creation failed.") });
+static UID_CAPTURE_REGEX: LazyLock<Regex> = LazyLock::new(|| { Regex::new(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})").expect("uid capture regex creation failed") });
 
 #[derive(Parser)]
 struct Args {
