@@ -35,7 +35,6 @@ impl Twine {
     }
 
     fn capture_uid(url: &Url) -> Result<String> {
-
         let uid: String = UID_CAPTURE_REGEX
             .captures(url.as_str()).context("Unable to capture a getyarn uid from the provided URL")?
             .get(1).context("Unable to capture (group 1) from getyarn string")?
@@ -43,6 +42,16 @@ impl Twine {
             .to_string();
 
         Ok(uid)
+    }
+
+
+    fn raw_gif_url(uid: String) -> Result<Url> {
+        ensure!(UID_CAPTURE_REGEX.is_match(&uid), "Error: attempted to find a raw gif url from y.yarn.co with an invalid UID"); // TODO: Convert this into its own type later so we avoid the redundant checking
+
+        let raw_gif_path = "https://y.yarn.co/".to_owned() + &uid + "_text.gif";
+        let raw_gif_url = Url::parse(&raw_gif_path)?;
+
+        Ok(raw_gif_url)
     }
 }
 
@@ -127,6 +136,28 @@ mod tests {
         
         assert!(uid.is_ok(), "a valid yarn url should produce a uid");
         assert_eq!(uid.unwrap(), expected_uid, "a valid yarn url should produce a uid");
+    }
+
+    ////////////////////////
+    // Twine::raw_gif_url //
+    ////////////////////////
+
+    #[test]
+    fn test_raw_gif_url_invalid_uid() {
+        let invalid = "sphinx of black quartz, judge my vow".to_string();
+        let url = Twine::raw_gif_url(invalid);
+        
+        dbg!(&url);
+
+        assert!(url.is_err(), "An invalid uid string should produce an error");
+    }
+
+    #[test]
+    fn test_raw_gif_url_valid_uid() {
+        let valid = "bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let expected = Url::parse("https://y.yarn.co/bbdb6c42-1fa4-44a5-8728-07529eafb138_text.gif").expect("Unable to set up expected yarn raw url for test");
+        
+        assert_eq!(Twine::raw_gif_url(valid).unwrap(), expected, "should be able to produce a valid url for the raw gif file");
     }
 }
 
