@@ -3,6 +3,8 @@ use regex::Regex;
 use url::{Url};
 use std::sync::LazyLock;
 use anyhow::{Context, Result, ensure};
+use reqwest::blocking::{Client};
+use std::io::{self, Write};
 
 // LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait
 static YARN_REGEX: LazyLock<Regex>        = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("getyarn.io validation regex creation failed.") });
@@ -49,7 +51,8 @@ impl PartialEq for Uid {
 struct Twine {
     args: Args,
     url: Url,
-    uid: Uid
+    uid: Uid,
+    file_url: Url
 }
 
 impl Twine {
@@ -60,15 +63,18 @@ impl Twine {
         ensure!(Self::valid_yarn_url(&url), "It appears that you have entered a URL from a site other than getyarn.io");
 
         let uid: Uid = Uid::from_url(&url).context("Unable to generate uid from provided URL")?;
+        let file_url: Url = Self::raw_gif_url(&uid).context("Unable to generate raw file url")?;
 
-        Ok(Twine { url, uid, args })
+        dbg!(&file_url.as_str());
+
+        Ok(Twine { url, uid, args, file_url })
     }
 
     fn valid_yarn_url(url: &Url) -> bool {
         YARN_REGEX.is_match(url.as_str())
     }
 
-    fn raw_gif_url(uid: Uid) -> Result<Url> {
+    fn raw_gif_url(uid: &Uid) -> Result<Url> {
         let raw_gif_path = "https://y.yarn.co/".to_owned() + uid.as_str() + "_text.gif";
         let raw_gif_url = Url::parse(&raw_gif_path)?;
 
@@ -77,6 +83,17 @@ impl Twine {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+    let twine = Twine::new(args)?;
+    let client =
+        Client::builder()
+        .user_agent("Mozilla/5.0")
+        .build()?;
+
+
+    let raw = client.get(twine.file_url).send()?.bytes()?;
+
+    io::stdout().write_all(&raw)?;
     Ok(())
 }
 
@@ -184,7 +201,7 @@ mod tests {
         let valid = Uid("bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string());
         let expected = Url::parse("https://y.yarn.co/bbdb6c42-1fa4-44a5-8728-07529eafb138_text.gif").expect("Unable to set up expected yarn raw url for test");
         
-        assert_eq!(Twine::raw_gif_url(valid).unwrap(), expected, "should be able to produce a valid url for the raw gif file");
+        assert_eq!(Twine::raw_gif_url(&valid).unwrap(), expected, "should be able to produce a valid url for the raw gif file");
     }
 
     //////////////
