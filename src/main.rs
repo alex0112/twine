@@ -3,7 +3,7 @@ use regex::Regex;
 use url::{Url};
 use std::sync::LazyLock;
 use anyhow::{Context, Result, ensure};
-use reqwest::blocking::{Client};
+use minreq;
 use std::io::{self, Write};
 
 // LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait
@@ -85,15 +85,11 @@ impl Twine {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let twine = Twine::new(args)?;
-    let client =
-        Client::builder()
-        .user_agent("Mozilla/5.0")
-        .build()?;
 
+    let response = minreq::get(twine.file_url).send()?;
+    let raw: &[u8] = response.as_bytes();
 
-    let raw = client.get(twine.file_url).send()?.bytes()?;
-
-    io::stdout().write_all(&raw)?;
+    io::stdout().write_all(raw)?;
     Ok(())
 }
 
