@@ -12,3 +12,18 @@ Directly fetch gifs from [getyarn.io](getyarn.io)
 $ cargo install twine
 ```
 
+## Usage
+
+```
+Usage: twine [OPTIONS] <URL>
+
+Arguments:
+  <URL>  A valid yarn URL
+
+Options:
+  -o, --output <OUTPUT>  A filename to which the gif will be written
+  -h, --help             Print help
+
+```
+
+Made with <3 and rust by [kingsfoil](github.com/alex0112)
