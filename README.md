@@ -4,7 +4,7 @@
 
 # Twine
 
-Directly fetch gifs from [getyarn.io](getyarn.io)
+Directly fetch gifs from [getyarn.io](https://getyarn.io)
 
 ## Installation
 
@@ -14,7 +14,7 @@ $ cargo install twine-gif
 
 ## Usage
 
-```
+```bash
 Usage: twine [OPTIONS] <URL>
 
 Arguments:
@@ -23,6 +23,13 @@ Arguments:
 Options:
   -o, --output <OUTPUT>  A filename to which the gif will be written
   -h, --help             Print help
+
+```
+
+```bash
+$ twine 'https://getyarn.io/yarn-clip/b3d2898d-ed2a-4d71-a3a3-88b8355e04a1' > redirect.gif ## redirect to a file
+
+$ twine 'https://getyarn.io/yarn-clip/b3d2898d-ed2a-4d71-a3a3-88b8355e04a1' -o yourfile.gif
 
 ```
 
