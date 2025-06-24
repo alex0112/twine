@@ -5,6 +5,9 @@ use std::sync::LazyLock;
 use anyhow::{Context, Result, ensure};
 use minreq;
 use std::io::{self, Write};
+// use std::fs;
+use std::fmt;
+use std::path::{Path, PathBuf};
 
 // LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait
 static YARN_REGEX: LazyLock<Regex>        = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("getyarn.io validation regex creation failed.") });
@@ -14,11 +17,21 @@ static UID_CAPTURE_REGEX: LazyLock<Regex> = LazyLock::new(|| { Regex::new(r"([0-
 struct Args {
     /// A valid yarn URL
     #[arg(required = true)]
-    url: String
+    url: String,
+
+    /// A filename to which the gif will be written
+    #[arg(short, long, required = false)]
+    output: Option<String>
 }
 
 #[derive(Debug)]
 struct Uid(String);
+
+impl fmt::Display for Uid {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.0)
+    }
+}
 
 impl Uid {
     fn new(raw_uid: String) -> Result<Uid> {
@@ -52,7 +65,8 @@ struct Twine {
     args: Args,
     url: Url,
     uid: Uid,
-    file_url: Url
+    file_url: Url,
+    output_path: PathBuf,
 }
 
 impl Twine {
@@ -65,9 +79,22 @@ impl Twine {
         let uid: Uid = Uid::from_url(&url).context("Unable to generate uid from provided URL")?;
         let file_url: Url = Self::raw_gif_url(&uid).context("Unable to generate raw file url")?;
 
-        dbg!(&file_url.as_str());
+        let output_path = match args.output {
+            Some(ref filename) => Self::generate_output_path(&filename),
+            None => Self::generate_output_path(&uid.as_str()),
+        };
 
-        Ok(Twine { url, uid, args, file_url })
+        // let output_path = Path::new(output_file).context("Unable to use provided output file path");
+        
+        Ok(Twine { url, uid, args, file_url, output_path })
+    }
+
+    fn generate_output_path(filename: &str) -> PathBuf {
+        if filename.ends_with(".gif") {
+            Path::new(filename).to_path_buf()
+        } else {
+            Path::new(&format!("{filename}.gif")).to_path_buf()
+        }
     }
 
     fn valid_yarn_url(url: &Url) -> bool {
@@ -89,7 +116,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response = minreq::get(twine.file_url).send()?;
     let raw: &[u8] = response.as_bytes();
 
-    io::stdout().write_all(raw)?;
+    // if io::stdout().is_terminal() { // e.g. when using redirection with `>`
+    //     io::stdout().write_all(raw)?;
+    // } else {
+    //     // twine.output_file.write_all(raw)?
+    // }
+
     Ok(())
 }
 
@@ -110,7 +142,8 @@ mod tests {
     fn test_new_sanity() { // sanity case
         let test_url: String = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
         let test_args: Args = Args {
-            url: test_url
+            url: test_url,
+            output: None
         };
 
         assert!(Twine::new(test_args).is_ok(), "A basic call to Twine::new should return an Ok()");
@@ -120,7 +153,8 @@ mod tests {
     fn test_new_with_invalid_url_in_args() {
         let invalid = "https://example.com".to_string();
         let invalid_args: Args = Args {
-            url: invalid
+            url: invalid,
+            output: None
         };
 
         assert!(Twine::new(invalid_args).is_err(), "Creating args with an invalid yarn URL should fail");
@@ -130,7 +164,8 @@ mod tests {
     fn test_new_with_valid_url_in_args() {
         let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
         let valid_args = Args {
-            url: valid
+            url: valid,
+            output: None
         };
 
         assert!(Twine::new(valid_args).is_ok())
@@ -142,7 +177,8 @@ mod tests {
         let expected = Url::parse(valid).expect("Unable to create test url");
         
         let args: Args = Args {
-            url: valid.to_string()
+            url: valid.to_string(),
+            output: None
         };
 
         let twine: Twine = Twine::new(args).expect("Unable to create test Twine struct");
@@ -154,7 +190,8 @@ mod tests {
     fn test_new_should_correctly_parse_Uid() {
         let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
         let args: Args = Args {
-            url: valid
+            url: valid,
+            output: None
         };
 
         let expected_uid = Uid::new("bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string()).expect("Unable to create test Uid");
@@ -230,6 +267,17 @@ mod tests {
         let actual_uid = Uid::from_url(&valid).expect("Did not properly create Uid for test");
 
         assert_eq!(actual_uid, expected_uid, "A url not containing a UID string should produce an error");
+    }
+
+    /////////////////
+    // Uid::as_str //
+    /////////////////
+
+    #[test]
+    fn test_uid_as_str() {
+        let uid = Uid::new("bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string()).expect("Unable to create test Uid");
+
+        assert_eq!(uid.to_string(), "bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string());
     }
 }
 
