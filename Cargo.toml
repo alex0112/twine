@@ -9,6 +9,9 @@ license = "GPL-3.0"
 keywords = ["gif", "command-line", "yarn", "getyarn", "twine"]
 categories = ["command-line-utilities"]
 
+[[bin]]
+name = "twine"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
