@@ -5,9 +5,10 @@ use std::sync::LazyLock;
 use anyhow::{Context, Result, ensure};
 use minreq;
 use std::io::{self, Write};
-// use std::fs;
+use std::fs;
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::io::IsTerminal;
 
 // LazyLock bc Regex::new needs to evaluate at run time and static makes it require the Sync trait
 static YARN_REGEX: LazyLock<Regex>        = LazyLock::new(|| { Regex::new(r"getyarn\.io/yarn-clip").expect("getyarn.io validation regex creation failed.") });
@@ -116,11 +117,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response = minreq::get(twine.file_url).send()?;
     let raw: &[u8] = response.as_bytes();
 
-    // if io::stdout().is_terminal() { // e.g. when using redirection with `>`
-    //     io::stdout().write_all(raw)?;
-    // } else {
-    //     // twine.output_file.write_all(raw)?
-    // }
+    if !io::stdout().is_terminal() { // e.g. when using redirection with `>`
+        io::stdout().write_all(raw)?;
+    } else {
+        fs::write(twine.output_path, raw)?;
+    }
 
     Ok(())
 }
@@ -128,7 +129,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 // TODO:
 // - arboard crate (for putting the gif in clipboard) https://crates.io/crates/arboard
 // - gif crate (for trimming off the end of the gif) https://crates.io/crates/gif
-// - atty (for detecting whether we're writing to stdout or using `>`) https://docs.rs/atty/latest/atty/
 
 #[cfg(test)]
 mod tests {
