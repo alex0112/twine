@@ -9,7 +9,7 @@ Directly fetch gifs from [getyarn.io](getyarn.io)
 ## Installation
 
 ```bash
-$ cargo install twine
+$ cargo install twine-gif
 ```
 
 ## Usage
