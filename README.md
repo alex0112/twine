@@ -26,4 +26,4 @@ Options:
 
 ```
 
-Made with <3 and rust by [kingsfoil](github.com/alex0112)
+Made with <3 and rust by [kingsfoil](https://kingsfoil.surge.sh/about.html)
