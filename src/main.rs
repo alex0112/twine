@@ -201,6 +201,66 @@ mod tests {
 
     }
 
+    #[test]
+    fn test_new_with_output_file_default() {
+        let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let args: Args = Args {
+            url: valid,
+            output: None
+        };
+
+        let twine = Twine::new(args).expect("Unable to create test Twine struct from args");
+
+        let expected = Path::new("bbdb6c42-1fa4-44a5-8728-07529eafb138.gif").to_path_buf();
+        let result = twine.output_path;
+
+        assert_eq!(expected, result, "correctly uses the uid as the default filename");
+    }
+
+    #[test]
+    fn test_new_with_output_file_specified() {
+                let valid = "https://getyarn.io/yarn-clip/bbdb6c42-1fa4-44a5-8728-07529eafb138".to_string();
+        let args: Args = Args {
+            url: valid,
+            output: Some("foobar.gif".to_string())
+        };
+
+        let twine = Twine::new(args).expect("Unable to create test Twine struct from args");
+
+        let expected = Path::new("foobar.gif").to_path_buf();
+        let result = twine.output_path;
+
+        assert_eq!(expected, result, "correctly uses the provided filename");
+    }
+
+
+
+    /////////////////////////////////
+    // Twine::generate_output_path //
+    /////////////////////////////////
+
+    #[test]
+    fn test_generate_output_path_no_extension() {
+        let no_ext = "foobar";
+
+        let expected = Path::new("foobar.gif").to_path_buf();
+        let result = Twine::generate_output_path(&no_ext);
+
+        assert_eq!(expected, result, "the correct path is generated with no provided extension");
+    }
+
+    #[test]
+    fn test_generate_output_path_with_extension() {
+        let with_ext = "foobar.gif";
+
+        let expected = Path::new("foobar.gif").to_path_buf();
+        let result = Twine::generate_output_path(&with_ext);
+
+        assert_eq!(expected, result, "The correct path is generated with the extension");
+    }
+
+
+
     ///////////////////////////
     // Twine::valid_yarn_url //
     ///////////////////////////
